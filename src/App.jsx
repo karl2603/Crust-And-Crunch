@@ -7,15 +7,20 @@ import Lenis from '@studio-freight/lenis';
 gsap.registerPlugin(ScrollTrigger);
 
 export default function App() {
+  // --- STATE ---
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // --- REFS ---
   const canvasRef = useRef(null);
   const cursorRef = useRef(null);
   const galleryWrapperRef = useRef(null);
   const galleryTrackRef = useRef(null);
   const progressBarRef = useRef(null);
+  const menuRef = useRef(null);
+  const menuTl = useRef(null);
   const totalFrames = 120; // Ensure ezgif frames are in public/frames/
 
   // --- 0. NAVBAR SCROLL STATE ---
@@ -221,14 +226,63 @@ export default function App() {
     };
   }, [loading]);
 
+  // --- 4. MOBILE MENU GSAP TIMELINE ---
+  useEffect(() => {
+    // Initial State Setup
+    gsap.set(menuRef.current, { clipPath: 'inset(0% 0% 100% 0%)' }); 
+    gsap.set('.menu-link-inner', { yPercent: 110, rotateZ: 2 }); 
+    gsap.set('.menu-footer-item', { opacity: 0, y: 20 });
+    gsap.set('.menu-bg-glow', { scale: 0.5, opacity: 0 });
+
+    // Build the Timeline
+    menuTl.current = gsap.timeline({ paused: true })
+      .to(menuRef.current, {
+        clipPath: 'inset(0% 0% 0% 0%)',
+        duration: 1.2,
+        ease: 'expo.inOut'
+      })
+      .to('.menu-bg-glow', {
+        scale: 1,
+        opacity: 0.07,
+        duration: 1.5,
+        ease: 'power3.out'
+      }, "-=0.8")
+      .to('.menu-link-inner', {
+        yPercent: 0,
+        rotateZ: 0,
+        duration: 1,
+        stagger: 0.08,
+        ease: 'expo.out'
+      }, "-=0.8")
+      .to('.menu-footer-item', {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        stagger: 0.1,
+        ease: 'power3.out'
+      }, "-=0.6");
+
+    return () => menuTl.current.kill();
+  }, []);
+
+  // 5. Play/Reverse based on mobile menu state
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      menuTl.current.play();
+    } else {
+      menuTl.current.reverse();
+    }
+  }, [isMobileMenuOpen]);
+
+
   return (
     <div id="top" className="bg-[#0a0705] text-[#f5e6d3] min-h-screen overflow-hidden selection:bg-[#f5e6d3] selection:text-[#0a0705] md:cursor-none font-sans">
       
       {/* GLOBAL GRAIN OVERLAY */}
       <div className="noise-overlay fixed inset-0 z-0 pointer-events-none opacity-50 mix-blend-overlay"></div>
 
-      {/* CUSTOM MAGNETIC CURSOR (Hidden on mobile to prevent stuck dots) */}
-      <div ref={cursorRef} className="hidden md:block fixed top-0 left-0 w-3 h-3 bg-[#f5e6d3] rounded-full pointer-events-none z-[100] transform -translate-x-1/2 -translate-y-1/2 mix-blend-difference box-border"></div>
+      {/* CUSTOM MAGNETIC CURSOR */}
+      <div ref={cursorRef} className="hidden md:block fixed top-0 left-0 w-3 h-3 bg-[#f5e6d3] rounded-full pointer-events-none z-[110] transform -translate-x-1/2 -translate-y-1/2 mix-blend-difference box-border"></div>
 
       {/* SCROLL PROGRESS INDICATOR */}
       <div className="fixed top-0 left-0 w-full h-[2px] z-[60] bg-transparent pointer-events-none">
@@ -250,7 +304,7 @@ export default function App() {
       </div>
 
       {/* BUTTERY SMOOTH MORPHING NAVBAR */}
-      <div className={`fixed top-0 w-full z-50 flex justify-center pointer-events-none transition-all duration-[800ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
+      <div className={`fixed top-0 w-full z-[100] flex justify-center pointer-events-none transition-all duration-[800ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
         isScrolled ? 'pt-4 md:pt-6 px-4 md:px-8' : 'pt-0 px-0'
       }`}>
         <nav className={`pointer-events-auto flex justify-between items-center w-full border transition-all duration-[800ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
@@ -258,9 +312,15 @@ export default function App() {
             ? 'max-w-[900px] bg-[#0a0705]/85 backdrop-blur-xl border-[#f5e6d3]/20 rounded-full px-6 md:px-10 py-3 shadow-[0_8px_32px_rgba(0,0,0,0.5)]' 
             : 'max-w-[100%] bg-transparent border-transparent rounded-none px-6 md:px-16 py-6 md:py-8'
         }`}>
-          <div className="font-serif text-xl md:text-2xl font-semibold text-[#fcfbf8] hover-target md:cursor-none">
+          
+          {/* LOGO - Now an anchor tag targeting #top to scroll to hero */}
+          <a 
+            href="#top" 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="font-serif text-xl md:text-2xl font-semibold text-[#fcfbf8] hover-target md:cursor-none"
+          >
             C<span className="italic">&</span>C
-          </div>
+          </a>
           
           <div className="hidden md:flex gap-10 text-[10px] font-bold tracking-[0.25em] uppercase text-[#fcfbf8]">
             {['Story', 'Process', 'Gallery', 'Menu'].map((item) => (
@@ -272,11 +332,56 @@ export default function App() {
           </div>
 
           {/* Mobile Menu Hamburger */}
-          <div className="md:hidden flex flex-col gap-[5px] hover-target p-2 cursor-pointer group">
-            <div className="w-6 h-[1px] bg-[#fcfbf8] transition-all duration-300 group-hover:w-4"></div>
-            <div className="w-6 h-[1px] bg-[#fcfbf8] transition-all duration-300 group-hover:w-full"></div>
+          <div 
+            className="md:hidden flex flex-col justify-center items-center w-10 h-10 hover-target cursor-pointer z-[100]"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            <div className={`w-6 h-[1.5px] bg-[#fcfbf8] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] absolute ${isMobileMenuOpen ? 'rotate-45' : '-translate-y-1.5'}`}></div>
+            <div className={`w-6 h-[1.5px] bg-[#fcfbf8] transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] absolute ${isMobileMenuOpen ? '-rotate-45' : 'translate-y-1.5'}`}></div>
           </div>
         </nav>
+      </div>
+
+      {/* MOBILE MENU OVERLAY (GSAP POWERED) */}
+      <div 
+        ref={menuRef} 
+        className={`md:hidden fixed inset-0 bg-[#0a0705] z-[90] flex flex-col justify-between px-8 pb-12 pt-32 ${isMobileMenuOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+      >
+        <div className="absolute inset-0 noise-overlay pointer-events-none opacity-50 mix-blend-overlay z-0"></div>
+        <div className="menu-bg-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#f5e6d3] rounded-full blur-[120px] pointer-events-none z-0"></div>
+
+        <div className="flex flex-col gap-4 w-full z-10 mt-12">
+          {['Story', 'Process', 'Gallery', 'Menu'].map((item, index) => (
+            <div key={item} className="overflow-hidden p-1">
+              <a 
+                href={`#${item.toLowerCase()}`} 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="menu-link-inner flex items-baseline w-max group origin-bottom-left"
+              >
+                <span className="text-[#f5e6d3]/40 text-[10px] font-sans tracking-[0.4em] mr-6 pb-2">
+                  0{index + 1}
+                </span>
+                <span className="font-serif text-[12vw] leading-none text-[#fcfbf8] group-active:text-[#f5e6d3]/60 group-active:italic transition-colors duration-300">
+                  {item}
+                </span>
+              </a>
+            </div>
+          ))}
+        </div>
+
+        <div className="w-full flex justify-between items-end border-t border-[#f5e6d3]/15 pt-8 z-10">
+          <div className="flex flex-col gap-4">
+            <span className="menu-footer-item text-[9px] font-bold uppercase tracking-[0.3em] text-[#f5e6d3]/40">Socials</span>
+            <div className="flex gap-6">
+              <a href="#" className="menu-footer-item text-xs text-[#fcfbf8] tracking-widest active:opacity-50">IG</a>
+              <a href="#" className="menu-footer-item text-xs text-[#fcfbf8] tracking-widest active:opacity-50">TW</a>
+            </div>
+          </div>
+          <div className="text-right flex flex-col gap-4">
+            <span className="menu-footer-item text-[9px] font-bold uppercase tracking-[0.3em] text-[#f5e6d3]/40 block">Inquiries</span>
+            <a href="mailto:hello@crustandcrunch.com" className="menu-footer-item text-xs text-[#fcfbf8] tracking-wider active:opacity-50">Drop a line</a>
+          </div>
+        </div>
       </div>
 
       {/* 1. HERO (PINNED CANVAS) */}
