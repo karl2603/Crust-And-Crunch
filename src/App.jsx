@@ -1,10 +1,21 @@
-// src/App.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from '@studio-freight/lenis';
 
 gsap.registerPlugin(ScrollTrigger);
+
+const AnimatedText = ({ text, className }) => {
+  return (
+    <span className={className}>
+      {text.split(' ').map((word, i) => (
+        <span key={i} className="reveal-word inline-block mr-[0.25em] opacity-20">
+          {word}
+        </span>
+      ))}
+    </span>
+  );
+};
 
 export default function App() {
   const [loading, setLoading] = useState(true);
@@ -21,6 +32,7 @@ export default function App() {
   const progressBarRef = useRef(null);
   const menuRef = useRef(null);
   const menuTl = useRef(null);
+  const mainRef = useRef(null);
   const totalFrames = 120;
 
   useEffect(() => {
@@ -172,11 +184,13 @@ export default function App() {
     });
 
     heroTimeline.to(playhead, { frame: totalFrames - 1, snap: "frame", ease: "none", onUpdate: render });
-    heroTimeline.to('.hero-text', { opacity: 0, scale: 0.9, y: -100, ease: "power2.inOut" }, "<20%");
+    heroTimeline.to('.hero-text-main', { y: -150, scale: 1.1, opacity: 0, filter: "blur(10px)", ease: "power2.inOut" }, "<");
+    heroTimeline.to('.hero-sub-element', { y: -50, opacity: 0, ease: "power2.inOut", stagger: 0.1 }, "<10%");
 
     gsap.utils.toArray('.parallax-img').forEach(img => {
       gsap.to(img, {
         yPercent: 20,
+        scale: 1.05,
         ease: "none",
         scrollTrigger: {
           trigger: img.parentElement,
@@ -188,24 +202,78 @@ export default function App() {
     });
 
     gsap.fromTo('.bento-item',
-      { y: 60, opacity: 0 },
-      { y: 0, opacity: 1, duration: 1.5, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '#process', start: 'top 75%' } }
+      { y: 80, opacity: 0, scale: 0.95 },
+      { y: 0, opacity: 1, scale: 1, duration: 1.5, stagger: 0.15, ease: 'expo.out', scrollTrigger: { trigger: '#process', start: 'top 75%' } }
     );
+
+    document.querySelectorAll('.bento-item').forEach((item) => {
+      item.addEventListener('mousemove', (e) => {
+        const rect = item.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -4;
+        const rotateY = ((x - centerX) / centerX) * 4;
+        gsap.to(item, { rotateX, rotateY, transformPerspective: 1000, duration: 0.4, ease: 'power2.out' });
+      });
+      item.addEventListener('mouseleave', () => {
+        gsap.to(item, { rotateX: 0, rotateY: 0, duration: 0.7, ease: 'elastic.out(1, 0.5)' });
+      });
+    });
 
     gsap.to('.marquee-track', { xPercent: -50, ease: "none", duration: 20, repeat: -1 });
 
     const track = galleryTrackRef.current;
-    gsap.to(track, {
-      x: () => -(track.scrollWidth - window.innerWidth),
-      ease: "none",
-      scrollTrigger: {
-        trigger: galleryWrapperRef.current,
-        start: "top top",
-        end: () => "+=" + (track.scrollWidth - window.innerWidth),
-        pin: true,
-        scrub: 1,
-        invalidateOnRefresh: true
-      }
+    
+    let isMobile = window.innerWidth <= 768;
+    
+    if(!isMobile) {
+        gsap.to(track, {
+            x: () => -(track.scrollWidth - window.innerWidth),
+            ease: "none",
+            scrollTrigger: {
+              trigger: galleryWrapperRef.current,
+              start: "top top",
+              end: () => "+=" + (track.scrollWidth - window.innerWidth),
+              pin: true,
+              scrub: 1,
+              invalidateOnRefresh: true
+            }
+          });
+    }
+
+    gsap.utils.toArray('.reveal-text-container').forEach(container => {
+      const words = container.querySelectorAll('.reveal-word');
+      gsap.to(words, {
+        opacity: 1,
+        stagger: 0.1,
+        scrollTrigger: {
+          trigger: container,
+          start: "top 80%",
+          end: "bottom 60%",
+          scrub: true
+        }
+      });
+    });
+
+    gsap.utils.toArray('.menu-row').forEach((row) => {
+      gsap.fromTo(row, 
+        { opacity: 0, y: 40, rotateX: -15 },
+        { opacity: 1, y: 0, rotateX: 0, duration: 1.2, ease: "expo.out", scrollTrigger: { trigger: row, start: "top 90%" } }
+      );
+    });
+
+    gsap.fromTo('.footer-huge-text', 
+      { yPercent: 50, scale: 0.9, opacity: 0 }, 
+      { yPercent: 0, scale: 1, opacity: 0.9, ease: "power3.out", scrollTrigger: { trigger: 'footer', start: "top bottom", end: "bottom bottom", scrub: 1 } }
+    );
+
+    gsap.utils.toArray('.fade-up-element').forEach(el => {
+      gsap.fromTo(el,
+        { opacity: 0, y: 50 },
+        { opacity: 1, y: 0, duration: 1.2, ease: "power3.out", scrollTrigger: { trigger: el, start: "top 85%" } }
+      );
     });
 
     return () => {
@@ -289,7 +357,7 @@ export default function App() {
   };
 
   return (
-    <div id="top" className="bg-[#0a0705] text-[#f5e6d3] min-h-screen overflow-hidden selection:bg-[#f5e6d3] selection:text-[#0a0705] md:cursor-none font-sans">
+    <div id="top" ref={mainRef} className="bg-[#0a0705] text-[#f5e6d3] min-h-screen overflow-hidden selection:bg-[#f5e6d3] selection:text-[#0a0705] md:cursor-none font-sans">
       
       <div className="noise-overlay fixed inset-0 z-0 pointer-events-none opacity-50 mix-blend-overlay"></div>
 
@@ -395,15 +463,15 @@ export default function App() {
 
         <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
           <div className="hero-text text-center px-4 w-full flex flex-col items-center">
-            <h1 className="font-serif text-[22vw] md:text-[14vw] leading-[0.8] tracking-tighter text-[#fcfbf8] mix-blend-overlay opacity-90 drop-shadow-2xl">
+            <h1 className="hero-text-main font-serif text-[22vw] md:text-[14vw] leading-[0.8] tracking-tighter text-[#fcfbf8] mix-blend-overlay opacity-90 drop-shadow-2xl">
               CRUST <span className="italic font-light">&</span><br/>CRUNCH
             </h1>
             
             <div className="mt-8 md:mt-12 flex flex-col items-center gap-6 pointer-events-auto">
-              <p className="text-[9px] md:text-xs tracking-[0.4em] uppercase text-[#f5e6d3]/80 text-center">
+              <p className="hero-sub-element text-[9px] md:text-xs tracking-[0.4em] uppercase text-[#f5e6d3]/80 text-center">
                 Ashok Nagar • Chennai
               </p>
-              <a href="#menu" className="hover-target md:cursor-none px-6 md:px-8 py-3 border border-[#f5e6d3]/40 rounded-full text-[10px] tracking-[0.2em] uppercase text-[#f5e6d3] hover:bg-[#f5e6d3] hover:text-[#0a0705] transition-all duration-500 ease-out">
+              <a href="#menu" className="hero-sub-element hover-target md:cursor-none px-6 md:px-8 py-3 border border-[#f5e6d3]/40 rounded-full text-[10px] tracking-[0.2em] uppercase text-[#f5e6d3] hover:bg-[#f5e6d3] hover:text-[#0a0705] transition-all duration-500 ease-out">
                 Explore Menu
               </a>
               </div>
@@ -414,16 +482,16 @@ export default function App() {
 
       <section id="story" className="py-24 md:py-48 px-6 md:px-16 relative z-30 bg-[#0a0705]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-12 md:gap-24 items-center">
-          <div className="w-full md:w-5/12 flex flex-col justify-center">
+          <div className="w-full md:w-5/12 flex flex-col justify-center reveal-text-container fade-up-element">
             <p className="text-[10px] tracking-[0.4em] uppercase text-[#f5e6d3]/40 mb-6 md:mb-8 border-l border-[#f5e6d3]/20 pl-4">The Origin</p>
             <h2 className="font-serif text-4xl md:text-6xl leading-tight text-[#fcfbf8] mb-8 md:mb-10">
               Time is <br/><span className="italic text-[#f5e6d3]/60">the master</span> ingredient.
             </h2>
-            <p className="text-sm md:text-lg text-[#f5e6d3]/60 font-light leading-relaxed mb-8 md:mb-12">
-              We reject modern shortcuts. Every pastry that leaves our ovens is the result of a rigorous three-day ritual of resting, folding, and chilling. It is a violent dedication to the craft that you can taste in every single shattering layer.
-            </p>
+            <div className="text-sm md:text-lg text-[#f5e6d3]/80 font-light leading-relaxed mb-8 md:mb-12">
+              <AnimatedText text="We reject modern shortcuts. Every pastry that leaves our ovens is the result of a rigorous three-day ritual of resting, folding, and chilling. It is a violent dedication to the craft that you can taste in every single shattering layer." />
+            </div>
           </div>
-          <div className="w-full md:w-7/12 aspect-[4/5] md:aspect-[16/10] relative overflow-hidden rounded-sm group hover-target">
+          <div className="w-full md:w-7/12 aspect-[4/5] md:aspect-[16/10] relative overflow-hidden rounded-sm group hover-target fade-up-element">
             <img 
               src="https://images.unsplash.com/photo-1508424757105-b6d5ad9329d0?q=80&w=2000&auto=format&fit=crop" 
               alt="Flour dusting" 
@@ -436,40 +504,40 @@ export default function App() {
 
       <section id="process" className="py-20 md:py-24 px-6 md:px-16 bg-[#0a0705] relative z-30">
         <div className="max-w-7xl mx-auto">
-          <h2 className="font-serif text-3xl md:text-5xl text-[#fcfbf8] mb-16 md:mb-32 text-center italic opacity-90">The Anatomy of Perfect Pastry</h2>
+          <h2 className="fade-up-element font-serif text-3xl md:text-5xl text-[#fcfbf8] mb-16 md:mb-32 text-center italic opacity-90">The Anatomy of Perfect Pastry</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 md:auto-rows-[450px]">
-            <div className="bento-item min-h-[350px] md:min-h-0 md:col-span-2 relative bg-[#120d09] rounded-sm overflow-hidden group hover-target flex items-end p-6 md:p-12">
-              <img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Heritage Milling"/>
+            <div className="bento-item min-h-[350px] md:min-h-0 md:col-span-2 relative bg-[#120d09] rounded-sm overflow-hidden hover-target flex items-end p-6 md:p-12 group">
+              <img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=1000&auto=format&fit=crop" className="parallax-img absolute inset-0 w-full h-[120%] -top-[10%] object-cover opacity-30 group-hover:opacity-60 transition-all duration-1000 ease-out" alt="Heritage Milling"/>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0705] via-[#0a0705]/50 to-transparent z-10 pointer-events-none"></div>
-              <div className="relative z-20 w-full pointer-events-none">
+              <div className="relative z-20 w-full pointer-events-none transition-transform duration-500 group-hover:translate-x-2 group-hover:-translate-y-2">
                 <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/60 block mb-3">01. Heritage Milling</span>
                 <h3 className="font-serif text-2xl md:text-4xl text-[#fcfbf8]">Sourced from local farms.</h3>
               </div>
             </div>
             
-            <div className="bento-item min-h-[300px] md:min-h-0 relative bg-[#120d09] rounded-sm overflow-hidden group hover-target flex items-end p-6 md:p-8">
-              <img src="https://images.unsplash.com/photo-1608198093002-ad4e005484ec?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Lamination"/>
+            <div className="bento-item min-h-[300px] md:min-h-0 relative bg-[#120d09] rounded-sm overflow-hidden hover-target flex items-end p-6 md:p-8 group">
+              <img src="https://images.unsplash.com/photo-1608198093002-ad4e005484ec?q=80&w=1000&auto=format&fit=crop" className="parallax-img absolute inset-0 w-full h-[120%] -top-[10%] object-cover opacity-30 group-hover:opacity-60 transition-all duration-1000 ease-out" alt="Lamination"/>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0705] via-[#0a0705]/60 to-transparent z-10 pointer-events-none"></div>
-              <div className="relative z-20 pointer-events-none">
+              <div className="relative z-20 pointer-events-none transition-transform duration-500 group-hover:translate-x-2 group-hover:-translate-y-2">
                 <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/60 block mb-3">02. Lamination</span>
                 <h3 className="font-serif text-xl md:text-2xl text-[#fcfbf8]">84% Butterfat.</h3>
               </div>
             </div>
             
-            <div className="bento-item min-h-[300px] md:min-h-0 relative bg-[#120d09] rounded-sm overflow-hidden group hover-target flex items-end p-6 md:p-8">
-              <img src="https://images.unsplash.com/photo-1556910110-a5a63dfd393c?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Shaping"/>
+            <div className="bento-item min-h-[300px] md:min-h-0 relative bg-[#120d09] rounded-sm overflow-hidden hover-target flex items-end p-6 md:p-8 group">
+              <img src="https://images.unsplash.com/photo-1556910110-a5a63dfd393c?q=80&w=1000&auto=format&fit=crop" className="parallax-img absolute inset-0 w-full h-[120%] -top-[10%] object-cover opacity-30 group-hover:opacity-60 transition-all duration-1000 ease-out" alt="Shaping"/>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0705] via-[#0a0705]/60 to-transparent z-10 pointer-events-none"></div>
-              <div className="relative z-20 pointer-events-none">
+              <div className="relative z-20 pointer-events-none transition-transform duration-500 group-hover:translate-x-2 group-hover:-translate-y-2">
                 <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/60 block mb-3">03. Shaping</span>
                 <h3 className="font-serif text-xl md:text-2xl text-[#fcfbf8]">Rolled by hand.</h3>
               </div>
             </div>
             
-            <div className="bento-item min-h-[350px] md:min-h-0 md:col-span-2 relative bg-[#120d09] rounded-sm overflow-hidden group hover-target flex items-end p-6 md:p-12">
-              <img src="https://images.unsplash.com/photo-1623334044303-241021148842?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Baking"/>
+            <div className="bento-item min-h-[350px] md:min-h-0 md:col-span-2 relative bg-[#120d09] rounded-sm overflow-hidden hover-target flex items-end p-6 md:p-12 group">
+              <img src="https://images.unsplash.com/photo-1623334044303-241021148842?q=80&w=1000&auto=format&fit=crop" className="parallax-img absolute inset-0 w-full h-[120%] -top-[10%] object-cover opacity-40 group-hover:opacity-70 transition-all duration-1000 ease-out" alt="Baking"/>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0705] via-[#0a0705]/40 to-transparent z-10 pointer-events-none"></div>
-              <div className="relative z-20 pointer-events-none">
+              <div className="relative z-20 pointer-events-none transition-transform duration-500 group-hover:translate-x-2 group-hover:-translate-y-2">
                 <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/60 block mb-3">04. The Bake</span>
                 <h3 className="font-serif text-2xl md:text-4xl text-[#fcfbf8]">Shatteringly crisp.</h3>
               </div>
@@ -480,12 +548,14 @@ export default function App() {
       
       <section className="py-24 md:py-32 px-6 md:px-16 bg-[#0a0705] relative z-30">
         <div className="max-w-6xl mx-auto border-t border-[#f5e6d3]/10 pt-20 md:pt-32 flex flex-col md:flex-row gap-12 md:gap-16 items-center">
-          <div className="w-full md:w-1/2 aspect-[3/4] relative overflow-hidden rounded-t-[100px] rounded-b-sm group hover-target">
+          <div className="w-full md:w-1/2 aspect-[3/4] relative overflow-hidden rounded-t-[100px] rounded-b-sm group hover-target fade-up-element">
             <img src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?q=80&w=1000&auto=format&fit=crop" alt="Head Baker" className="parallax-img absolute inset-0 w-full h-[115%] -top-[10%] object-cover opacity-80 grayscale group-hover:grayscale-0 transition-all duration-1000" />
           </div>
-          <div className="w-full md:w-1/2 md:pl-10 text-center md:text-left">
+          <div className="w-full md:w-1/2 md:pl-10 text-center md:text-left reveal-text-container fade-up-element">
             <h2 className="font-serif text-3xl md:text-6xl text-[#fcfbf8] mb-6 md:mb-8">The Hands <br className="hidden md:block"/><span className="italic">Behind the Dough</span></h2>
-            <p className="text-[#f5e6d3]/60 leading-relaxed font-light mb-8 md:mb-10 text-sm md:text-lg">"Baking at this level is not about recipes. It's about feeling the humidity in the air, the warmth of the flour, and listening to the crackle of the crust as it cools. It is a living, breathing dialogue."</p>
+            <div className="text-[#f5e6d3]/80 leading-relaxed font-light mb-8 md:mb-10 text-sm md:text-lg">
+              <AnimatedText text='"Baking at this level is not about recipes. It is about feeling the humidity in the air, the warmth of the flour, and listening to the crackle of the crust as it cools. It is a living, breathing dialogue."' />
+            </div>
             <p className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/40">— Lucifer, Head Chef</p>
           </div>
         </div>
@@ -494,7 +564,7 @@ export default function App() {
       <section className="h-[60vh] md:h-[90vh] w-full relative overflow-hidden z-30 flex items-center justify-center">
         <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=2000&auto=format&fit=crop" alt="Pouring coffee" className="parallax-img absolute inset-0 w-full h-[140%] -top-[20%] object-cover opacity-30 z-0" />
         <div className="absolute inset-0 bg-[#0a0705]/50 z-10"></div>
-        <h2 className="relative z-20 font-serif text-[10vw] md:text-[6vw] text-[#fcfbf8] italic text-center leading-tight">
+        <h2 className="relative z-20 font-serif text-[10vw] md:text-[6vw] text-[#fcfbf8] italic text-center leading-tight fade-up-element">
           Coffee, elevated.<br/>
           <span className="not-italic text-[3vw] md:text-[2vw] tracking-[0.2em] font-sans font-bold uppercase block mt-4 md:mt-6 text-[#f5e6d3]/80">Single Origin Reserve</span>
         </h2>
@@ -511,34 +581,36 @@ export default function App() {
         </div>
       </section>
 
-      <section id="gallery" ref={galleryWrapperRef} className="h-screen bg-[#0a0705] flex items-center overflow-hidden z-30 relative">
-        <div className="absolute top-24 md:top-32 left-6 md:left-16 z-10">
+      <section id="gallery" ref={galleryWrapperRef} className="md:h-screen bg-[#0a0705] flex items-center overflow-hidden z-30 relative py-20 md:py-0">
+        <div className="absolute top-8 md:top-32 left-6 md:left-16 z-10 hidden md:block">
           <p className="text-[9px] md:text-[10px] tracking-[0.4em] uppercase text-[#f5e6d3]/40">[ The Atmosphere ]</p>
         </div>
-        <div ref={galleryTrackRef} className="flex gap-8 md:gap-12 px-6 md:px-32 h-[50vh] md:h-[65vh] w-max items-center">
+        <div ref={galleryTrackRef} className="flex flex-col md:flex-row gap-8 md:gap-12 px-6 md:px-32 md:h-[65vh] md:w-max items-center">
           
-          <div className="w-[85vw] md:w-[45vw] h-full relative group hover-target shrink-0 overflow-hidden rounded-sm">
+          <div className="w-full md:w-[45vw] h-[50vh] md:h-full relative group hover-target shrink-0 overflow-hidden rounded-sm fade-up-element">
             <img src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Interior"/>
           </div>
-          <div className="w-[85vw] md:w-[35vw] h-[80%] relative group hover-target shrink-0 overflow-hidden rounded-sm">
+          <div className="w-full md:w-[35vw] h-[50vh] md:h-[80%] relative group hover-target shrink-0 overflow-hidden rounded-sm fade-up-element">
             <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Coffee Details"/>
           </div>
-          <div className="w-[85vw] md:w-[45vw] h-full relative group hover-target shrink-0 overflow-hidden rounded-sm">
+          <div className="w-full md:w-[45vw] h-[50vh] md:h-full relative group hover-target shrink-0 overflow-hidden rounded-sm fade-up-element">
             <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Interior Detail"/>
           </div>
 
-          <div className="w-[85vw] md:w-[40vw] h-full flex flex-col justify-center px-4 md:px-16 shrink-0">
+          <div className="w-full md:w-[40vw] h-auto md:h-full flex flex-col justify-center py-10 md:py-0 md:px-16 shrink-0 reveal-text-container fade-up-element">
             <h2 className="font-serif text-3xl md:text-6xl text-[#fcfbf8] italic mb-6 md:mb-8">A space to pause.</h2>
-            <p className="text-[#f5e6d3]/60 font-light text-sm md:text-lg leading-relaxed">Designed for slow mornings, quiet conversations, and the simple, profound joy of exceptional pastry and pour-over coffee.</p>
+            <div className="text-[#f5e6d3]/80 font-light text-sm md:text-lg leading-relaxed">
+              <AnimatedText text="Designed for slow mornings, quiet conversations, and the simple, profound joy of exceptional pastry and pour-over coffee." />
+            </div>
           </div>
         </div>
       </section>
 
       <section className="py-24 md:py-48 px-6 md:px-16 bg-[#120d09] relative z-30 flex items-center justify-center text-center">
-        <div className="max-w-4xl">
+        <div className="max-w-4xl fade-up-element reveal-text-container">
           <svg className="mx-auto mb-8 md:mb-12 text-[#f5e6d3]/20 w-8 h-8 md:w-12 md:h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
           <h2 className="font-serif text-2xl md:text-5xl text-[#fcfbf8] leading-relaxed md:leading-tight mb-8 md:mb-12">
-            "Without a doubt, the most <span className="italic text-white">extraordinary cafe</span> we have seen in Chennai."
+             <AnimatedText text='"Without a doubt, the most extraordinary cafe we have seen in Chennai."' />
           </h2>
           <p className="text-[9px] md:text-[10px] tracking-[0.4em] uppercase text-[#f5e6d3]/40">— The Times Of India</p>
         </div>
@@ -546,71 +618,62 @@ export default function App() {
 
       <section id="menu" className="py-24 md:py-32 px-6 md:px-16 bg-[#fcfbf8] text-[#0a0705] relative z-30 transition-colors duration-1000">
         <div className="max-w-5xl mx-auto">
-          <div className="flex justify-between items-end border-b border-[#0a0705]/10 pb-8 md:pb-10 mb-12 md:mb-16">
+          <div className="flex justify-between items-end border-b border-[#0a0705]/10 pb-8 md:pb-10 mb-12 md:mb-16 fade-up-element">
             <h2 className="font-serif text-4xl md:text-7xl text-[#0a0705]">Menu</h2>
             <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#0a0705]/50 hidden md:block font-bold">Served until sold out</span>
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex flex-col group/menu">
             {[
               { 
                 name: 'Signature Butter Croissant', 
                 price: '₹350', 
                 desc: 'Isigny Ste Mère butter, 72h ferment, shattering crust.',
-                image: 'https://images.unsplash.com/photo-1549903072-7e6e0d2390eb?q=80&w=1000&auto=format&fit=crop'
               },
               { 
                 name: 'Pain au Chocolat', 
                 price: '₹420', 
                 desc: 'Laminated dough encasing twin Valrhona dark chocolate batons.',
-                image: 'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?q=80&w=1000&auto=format&fit=crop'
               },
               { 
                 name: 'Pistachio & Rose Twice-Baked', 
                 price: '₹550', 
                 desc: 'Iranian pistachio frangipane, subtle hint of local rose petal preserve.',
-                image: 'https://images.unsplash.com/photo-1623366302587-b2487aeaf303?q=80&w=1000&auto=format&fit=crop'
               },
               { 
                 name: 'Cardamom Knot', 
                 price: '₹320', 
                 desc: 'Braided brioche, freshly ground local green cardamom, pearl sugar.',
-                image: 'https://images.unsplash.com/photo-1509365465985-25d11c17e812?q=80&w=1000&auto=format&fit=crop'
               },
               { 
                 name: 'Madras Filter Coffee Éclair', 
                 price: '₹480', 
                 desc: 'Choux pastry filled with a rich degree-coffee infused crème diplomate.',
-                image: 'https://images.unsplash.com/photo-1612201142855-7873bc1661b4?q=80&w=1000&auto=format&fit=crop'
               },
               { 
                 name: 'Truffle Mushroom Cruffin', 
                 price: '₹520', 
                 desc: 'Savoury cruffin, wild mushroom duxelles, white truffle oil, thyme.',
-                image: 'https://images.unsplash.com/photo-1579954115545-a95591f28bfc?q=80&w=1000&auto=format&fit=crop'
               },
               { 
                 name: 'Vanilla Bean Tart', 
                 price: '₹650', 
                 desc: 'Madagascar vanilla bean ganache, crisp butter sablé shell.',
-                image: 'https://images.unsplash.com/photo-1519869325930-281384150729?q=80&w=1000&auto=format&fit=crop'
               },
               { 
                 name: 'Single Origin Pour Over', 
                 price: '₹450', 
                 desc: 'Rotating seasonal selection from Kodaikanal and Chikmagalur estates.',
-                image: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=1000&auto=format&fit=crop'
               },
               { 
                 name: 'Artisanal Cascara Kombucha', 
                 price: '₹380', 
                 desc: 'House-fermented with coffee cherry husks, sparkling and bright.',
-                image: 'https://images.unsplash.com/photo-1515442261605-65987783cb6a?q=80&w=1000&auto=format&fit=crop'
               }
             ].map((item, i) => (
-              <div key={i} className="hover-target group flex flex-col md:flex-row justify-between md:items-center py-6 md:py-12 border-b border-[#0a0705]/10 hover:border-[#0a0705]/40 transition-colors duration-500 md:cursor-none">
+              <div key={i} className="menu-row hover-target flex flex-col md:flex-row justify-between md:items-center py-6 md:py-12 border-b border-[#0a0705]/10 transition-all duration-500 md:cursor-none hover:pl-8 hover:bg-[#0a0705]/5 hover:border-[#0a0705]/40 opacity-100 hover:!opacity-100 group-hover/menu:opacity-40">
                 <div className="flex flex-col md:w-2/3">
-                  <h3 className="font-serif text-xl md:text-4xl text-[#0a0705]/80 group-hover:text-[#0a0705] md:group-hover:translate-x-4 transition-all duration-500">{item.name}</h3>
+                  <h3 className="font-serif text-xl md:text-4xl text-[#0a0705]/80 transition-all duration-500">{item.name}</h3>
                   <p className="text-xs md:text-sm text-[#0a0705]/60 mt-2 md:mt-4 tracking-wide font-medium">{item.desc}</p>
                 </div>
                 <span className="text-lg md:text-xl mt-3 md:mt-0 font-medium tracking-wider">{item.price}</span>
@@ -620,19 +683,19 @@ export default function App() {
         </div>
       </section>
 
-      <section id="contact" className="py-24 md:py-40 px-6 md:px-16 bg-[#0a0705] relative z-30 border-t border-[#f5e6d3]/5">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-16 md:gap-24">
-          <div className="w-full md:w-5/12 flex flex-col justify-center">
+      <section id="contact" className="py-24 md:py-40 px-6 md:px-16 bg-[#0a0705] relative z-30 border-t border-[#f5e6d3]/5 overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-16 md:gap-24 relative z-10">
+          <div className="w-full md:w-5/12 flex flex-col justify-center reveal-text-container fade-up-element">
             <p className="text-[10px] tracking-[0.4em] uppercase text-[#f5e6d3]/40 mb-6 md:mb-8 border-l border-[#f5e6d3]/20 pl-4">Inquiries</p>
             <h2 className="font-serif text-4xl md:text-6xl leading-tight text-[#fcfbf8] mb-8 md:mb-10">
               Let's start a <br/><span className="italic text-[#f5e6d3]/60">conversation.</span>
             </h2>
-            <p className="text-sm md:text-lg text-[#f5e6d3]/60 font-light leading-relaxed mb-8 md:mb-12">
-              Whether it's a private event, wholesale inquiry, or simply to share your thoughts about our pastries, we are always listening.
-            </p>
+            <div className="text-sm md:text-lg text-[#f5e6d3]/80 font-light leading-relaxed mb-8 md:mb-12">
+              <AnimatedText text="Whether it's a private event, wholesale inquiry, or simply to share your thoughts about our pastries, we are always listening." />
+            </div>
           </div>
           
-          <div className="w-full md:w-7/12 flex flex-col justify-center">
+          <div className="w-full md:w-7/12 flex flex-col justify-center fade-up-element">
             <form onSubmit={handleFormSubmit} className="flex flex-col gap-8 md:gap-12 w-full">
               <div className="flex flex-col md:flex-row gap-8 md:gap-12 w-full">
                 <div className="flex flex-col w-full relative">
@@ -667,7 +730,7 @@ export default function App() {
 
       <footer className="bg-[#050302] text-[#f5e6d3] pt-20 md:pt-24 pb-8 px-6 md:px-12 flex flex-col relative z-30 overflow-hidden">
         
-        <div className="max-w-[1400px] mx-auto w-full flex flex-col md:flex-row justify-between items-start gap-12 border-b border-[#f5e6d3]/15 pb-12 md:pb-16">
+        <div className="max-w-[1400px] mx-auto w-full flex flex-col md:flex-row justify-between items-start gap-12 border-b border-[#f5e6d3]/15 pb-12 md:pb-16 fade-up-element">
           <div className="w-full md:w-1/3">
             <h3 className="text-xl md:text-3xl font-serif mb-4 md:mb-6 text-[#fcfbf8]">Let's bake something incredible.</h3>
             <a href="mailto:hello@crustandcrunch.com" className="text-sm md:text-base border-b border-[#f5e6d3]/40 pb-1 hover-target hover:text-[#fcfbf8] hover:border-[#fcfbf8] transition-colors md:cursor-none">
@@ -691,7 +754,7 @@ export default function App() {
         </div>
         
         <div className="mt-16 md:mt-20 mb-8 md:mb-12 w-full flex justify-center items-center pointer-events-none select-none">
-          <h1 className="text-[14vw] md:text-[13vw] font-serif leading-[0.8] tracking-tighter text-[#fcfbf8] uppercase opacity-90 text-center">
+          <h1 className="footer-huge-text text-[14vw] md:text-[13vw] font-serif leading-[0.8] tracking-tighter text-[#fcfbf8] uppercase opacity-90 text-center">
             Crust <span className="italic font-light text-[12vw] md:text-[11vw]">&</span> Crunch
           </h1>
         </div>
