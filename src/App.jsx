@@ -7,13 +7,13 @@ import Lenis from '@studio-freight/lenis';
 gsap.registerPlugin(ScrollTrigger);
 
 export default function App() {
-  // --- STATE ---
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [formStatus, setFormStatus] = useState('idle'); 
   
-  // --- REFS ---
   const canvasRef = useRef(null);
   const cursorRef = useRef(null);
   const galleryWrapperRef = useRef(null);
@@ -21,19 +21,16 @@ export default function App() {
   const progressBarRef = useRef(null);
   const menuRef = useRef(null);
   const menuTl = useRef(null);
-  const totalFrames = 120; // Ensure ezgif frames are in public/frames/
+  const totalFrames = 120;
 
-  // --- 0. NAVBAR SCROLL STATE ---
   useEffect(() => {
     const handleScroll = () => {
-      // Trigger capsule state after 50px of scroll
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // --- 1. PRELOADER & SMOOTH SCROLL ---
   useEffect(() => {
     const lenis = new Lenis({
       duration: 1.8, 
@@ -52,7 +49,6 @@ export default function App() {
         progress = 100;
         clearInterval(interval);
         
-        // The Curtain Reveal Animation
         const tl = gsap.timeline();
         tl.to('.loader-content', { opacity: 0, duration: 0.5, ease: 'power2.inOut', delay: 0.2 })
           .to('.loader-top', { yPercent: -100, duration: 1.2, ease: 'expo.inOut' }, "+=0.1")
@@ -69,7 +65,6 @@ export default function App() {
     };
   }, []);
 
-  // --- 2. REFINED GEOMETRIC CURSOR ---
   useEffect(() => {
     const cursor = cursorRef.current;
     if (!cursor) return;
@@ -103,7 +98,7 @@ export default function App() {
     window.addEventListener('mousemove', moveCursor);
     
     const attachListeners = () => {
-      const interactables = document.querySelectorAll('a, button, input, .hover-target');
+      const interactables = document.querySelectorAll('a, button, input, textarea, .hover-target');
       interactables.forEach(el => {
         el.addEventListener('mouseenter', handleHover);
         el.addEventListener('mouseleave', handleLeave);
@@ -122,11 +117,9 @@ export default function App() {
     };
   }, [loading]);
 
-  // --- 3. SCROLL ANIMATIONS & CANVAS ---
   useEffect(() => {
     if (loading) return;
 
-    // A. Global Scroll Progress Bar
     gsap.to(progressBarRef.current, {
       scaleX: 1,
       ease: "none",
@@ -135,7 +128,6 @@ export default function App() {
       }
     });
 
-    // B. Canvas Scrub
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     const images = [];
@@ -182,7 +174,6 @@ export default function App() {
     heroTimeline.to(playhead, { frame: totalFrames - 1, snap: "frame", ease: "none", onUpdate: render });
     heroTimeline.to('.hero-text', { opacity: 0, scale: 0.9, y: -100, ease: "power2.inOut" }, "<20%");
 
-    // C. Global Image Parallax
     gsap.utils.toArray('.parallax-img').forEach(img => {
       gsap.to(img, {
         yPercent: 20,
@@ -196,16 +187,13 @@ export default function App() {
       });
     });
 
-    // D. Bento Grid Stagger Reveal
     gsap.fromTo('.bento-item',
       { y: 60, opacity: 0 },
       { y: 0, opacity: 1, duration: 1.5, stagger: 0.1, ease: 'expo.out', scrollTrigger: { trigger: '#process', start: 'top 75%' } }
     );
 
-    // E. Marquee
     gsap.to('.marquee-track', { xPercent: -50, ease: "none", duration: 20, repeat: -1 });
 
-    // F. Horizontal Scroll Gallery
     const track = galleryTrackRef.current;
     gsap.to(track, {
       x: () => -(track.scrollWidth - window.innerWidth),
@@ -226,15 +214,12 @@ export default function App() {
     };
   }, [loading]);
 
-  // --- 4. MOBILE MENU GSAP TIMELINE ---
   useEffect(() => {
-    // Initial State Setup
     gsap.set(menuRef.current, { clipPath: 'inset(0% 0% 100% 0%)' }); 
     gsap.set('.menu-link-inner', { yPercent: 110, rotateZ: 2 }); 
     gsap.set('.menu-footer-item', { opacity: 0, y: 20 });
     gsap.set('.menu-bg-glow', { scale: 0.5, opacity: 0 });
 
-    // Build the Timeline
     menuTl.current = gsap.timeline({ paused: true })
       .to(menuRef.current, {
         clipPath: 'inset(0% 0% 0% 0%)',
@@ -265,7 +250,6 @@ export default function App() {
     return () => menuTl.current.kill();
   }, []);
 
-  // 5. Play/Reverse based on mobile menu state
   useEffect(() => {
     if (isMobileMenuOpen) {
       menuTl.current.play();
@@ -274,22 +258,47 @@ export default function App() {
     }
   }, [isMobileMenuOpen]);
 
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setFormStatus('submitting');
+    
+    const form = e.target;
+    const data = new FormData(form);
+
+    try {
+      const response = await fetch("https://formspree.io/f/meevooek", {
+        method: 'POST',
+        body: data,
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        setFormStatus('success');
+        form.reset();
+        setTimeout(() => setFormStatus('idle'), 5000);
+      } else {
+        setFormStatus('error');
+        setTimeout(() => setFormStatus('idle'), 5000);
+      }
+    } catch (error) {
+      setFormStatus('error');
+      setTimeout(() => setFormStatus('idle'), 5000);
+    }
+  };
 
   return (
     <div id="top" className="bg-[#0a0705] text-[#f5e6d3] min-h-screen overflow-hidden selection:bg-[#f5e6d3] selection:text-[#0a0705] md:cursor-none font-sans">
       
-      {/* GLOBAL GRAIN OVERLAY */}
       <div className="noise-overlay fixed inset-0 z-0 pointer-events-none opacity-50 mix-blend-overlay"></div>
 
-      {/* CUSTOM MAGNETIC CURSOR */}
       <div ref={cursorRef} className="hidden md:block fixed top-0 left-0 w-3 h-3 bg-[#f5e6d3] rounded-full pointer-events-none z-[110] transform -translate-x-1/2 -translate-y-1/2 mix-blend-difference box-border"></div>
 
-      {/* SCROLL PROGRESS INDICATOR */}
       <div className="fixed top-0 left-0 w-full h-[2px] z-[60] bg-transparent pointer-events-none">
         <div ref={progressBarRef} className="h-full bg-[#f5e6d3]/80 origin-left scale-x-0 transition-transform duration-75 ease-out"></div>
       </div>
 
-      {/* THEATRE CURTAIN PRELOADER */}
       <div className="fixed inset-0 z-[200] pointer-events-none flex flex-col">
         <div className="loader-top w-full h-1/2 bg-[#0a0705] border-b border-[#f5e6d3]/5 relative">
           <div className="loader-content absolute bottom-0 left-0 w-full flex flex-col items-center justify-end pb-8">
@@ -303,7 +312,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* BUTTERY SMOOTH MORPHING NAVBAR */}
       <div className={`fixed top-0 w-full z-[100] flex justify-center pointer-events-none transition-all duration-[800ms] ease-[cubic-bezier(0.76,0,0.24,1)] ${
         isScrolled ? 'pt-4 md:pt-6 px-4 md:px-8' : 'pt-0 px-0'
       }`}>
@@ -313,7 +321,6 @@ export default function App() {
             : 'max-w-[100%] bg-transparent border-transparent rounded-none px-6 md:px-16 py-6 md:py-8'
         }`}>
           
-          {/* LOGO - Now an anchor tag targeting #top to scroll to hero */}
           <a 
             href="#top" 
             onClick={() => setIsMobileMenuOpen(false)}
@@ -323,7 +330,7 @@ export default function App() {
           </a>
           
           <div className="hidden md:flex gap-10 text-[10px] font-bold tracking-[0.25em] uppercase text-[#fcfbf8]">
-            {['Story', 'Process', 'Gallery', 'Menu'].map((item) => (
+            {['Story', 'Process', 'Gallery', 'Menu', 'Contact'].map((item) => (
               <a key={item} href={`#${item.toLowerCase()}`} className="relative group overflow-hidden hover-target py-2 md:cursor-none">
                 {item}
                 <span className="absolute bottom-0 left-0 w-full h-[1px] bg-[#fcfbf8] transform -translate-x-[105%] group-hover:translate-x-0 transition-transform duration-500 ease-out"></span>
@@ -331,7 +338,6 @@ export default function App() {
             ))}
           </div>
 
-          {/* Mobile Menu Hamburger */}
           <div 
             className="md:hidden flex flex-col justify-center items-center w-10 h-10 hover-target cursor-pointer z-[100]"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -342,7 +348,6 @@ export default function App() {
         </nav>
       </div>
 
-      {/* MOBILE MENU OVERLAY (GSAP POWERED) */}
       <div 
         ref={menuRef} 
         className={`md:hidden fixed inset-0 bg-[#0a0705] z-[90] flex flex-col justify-between px-8 pb-12 pt-32 ${isMobileMenuOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
@@ -351,7 +356,7 @@ export default function App() {
         <div className="menu-bg-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#f5e6d3] rounded-full blur-[120px] pointer-events-none z-0"></div>
 
         <div className="flex flex-col gap-4 w-full z-10 mt-12">
-          {['Story', 'Process', 'Gallery', 'Menu'].map((item, index) => (
+          {['Story', 'Process', 'Gallery', 'Menu', 'Contact'].map((item, index) => (
             <div key={item} className="overflow-hidden p-1">
               <a 
                 href={`#${item.toLowerCase()}`} 
@@ -384,7 +389,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* 1. HERO (PINNED CANVAS) */}
       <div id="hero-pin" className="relative h-screen w-full">
         <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover z-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0705] via-[#0a0705]/40 to-[#0a0705]/20 z-10" />
@@ -397,19 +401,17 @@ export default function App() {
             
             <div className="mt-8 md:mt-12 flex flex-col items-center gap-6 pointer-events-auto">
               <p className="text-[9px] md:text-xs tracking-[0.4em] uppercase text-[#f5e6d3]/80 text-center">
-                Boulangerie Artisanale • New York
+                Ashok Nagar • Chennai
               </p>
               <a href="#menu" className="hover-target md:cursor-none px-6 md:px-8 py-3 border border-[#f5e6d3]/40 rounded-full text-[10px] tracking-[0.2em] uppercase text-[#f5e6d3] hover:bg-[#f5e6d3] hover:text-[#0a0705] transition-all duration-500 ease-out">
                 Explore Menu
               </a>
-              <div className="w-[1px] h-8 md:h-12 bg-gradient-to-b from-[#f5e6d3]/50 to-transparent animate-pulse mt-2 pointer-events-none"></div>
-            </div>
+              </div>
 
           </div>
         </div>
       </div>
 
-      {/* 2. THE STORY (ORIGIN) */}
       <section id="story" className="py-24 md:py-48 px-6 md:px-16 relative z-30 bg-[#0a0705]">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-12 md:gap-24 items-center">
           <div className="w-full md:w-5/12 flex flex-col justify-center">
@@ -432,14 +434,13 @@ export default function App() {
         </div>
       </section>
 
-      {/* 3. CRAFTSMANSHIP BENTO GRID */}
       <section id="process" className="py-20 md:py-24 px-6 md:px-16 bg-[#0a0705] relative z-30">
         <div className="max-w-7xl mx-auto">
           <h2 className="font-serif text-3xl md:text-5xl text-[#fcfbf8] mb-16 md:mb-32 text-center italic opacity-90">The Anatomy of Perfect Pastry</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 md:auto-rows-[450px]">
             <div className="bento-item min-h-[350px] md:min-h-0 md:col-span-2 relative bg-[#120d09] rounded-sm overflow-hidden group hover-target flex items-end p-6 md:p-12">
-              <img src="https://images.unsplash.com/photo-1555507036-ab1e4006aaeb?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Heritage Milling"/>
+              <img src="https://images.unsplash.com/photo-1464226184884-fa280b87c399?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Heritage Milling"/>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0705] via-[#0a0705]/50 to-transparent z-10 pointer-events-none"></div>
               <div className="relative z-20 w-full pointer-events-none">
                 <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/60 block mb-3">01. Heritage Milling</span>
@@ -448,7 +449,7 @@ export default function App() {
             </div>
             
             <div className="bento-item min-h-[300px] md:min-h-0 relative bg-[#120d09] rounded-sm overflow-hidden group hover-target flex items-end p-6 md:p-8">
-              <img src="https://images.unsplash.com/photo-1550617931-e17a7b70dce2?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Lamination"/>
+              <img src="https://images.unsplash.com/photo-1608198093002-ad4e005484ec?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Lamination"/>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0705] via-[#0a0705]/60 to-transparent z-10 pointer-events-none"></div>
               <div className="relative z-20 pointer-events-none">
                 <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/60 block mb-3">02. Lamination</span>
@@ -457,7 +458,7 @@ export default function App() {
             </div>
             
             <div className="bento-item min-h-[300px] md:min-h-0 relative bg-[#120d09] rounded-sm overflow-hidden group hover-target flex items-end p-6 md:p-8">
-              <img src="https://images.unsplash.com/photo-1589304028243-7f722a45d0de?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Shaping"/>
+              <img src="https://images.unsplash.com/photo-1556910110-a5a63dfd393c?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-60 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Shaping"/>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0705] via-[#0a0705]/60 to-transparent z-10 pointer-events-none"></div>
               <div className="relative z-20 pointer-events-none">
                 <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/60 block mb-3">03. Shaping</span>
@@ -466,7 +467,7 @@ export default function App() {
             </div>
             
             <div className="bento-item min-h-[350px] md:min-h-0 md:col-span-2 relative bg-[#120d09] rounded-sm overflow-hidden group hover-target flex items-end p-6 md:p-12">
-              <img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Baking"/>
+              <img src="https://images.unsplash.com/photo-1623334044303-241021148842?q=80&w=1000&auto=format&fit=crop" className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-70 group-hover:scale-105 transition-all duration-1000 ease-out" alt="Baking"/>
               <div className="absolute inset-0 bg-gradient-to-t from-[#0a0705] via-[#0a0705]/40 to-transparent z-10 pointer-events-none"></div>
               <div className="relative z-20 pointer-events-none">
                 <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/60 block mb-3">04. The Bake</span>
@@ -476,22 +477,20 @@ export default function App() {
           </div>
         </div>
       </section>
-
-      {/* 4. THE ARTISAN (CHEF PROFILE) */}
+      
       <section className="py-24 md:py-32 px-6 md:px-16 bg-[#0a0705] relative z-30">
         <div className="max-w-6xl mx-auto border-t border-[#f5e6d3]/10 pt-20 md:pt-32 flex flex-col md:flex-row gap-12 md:gap-16 items-center">
           <div className="w-full md:w-1/2 aspect-[3/4] relative overflow-hidden rounded-t-[100px] rounded-b-sm group hover-target">
-            <img src="https://images.unsplash.com/photo-1583338917451-face2751d8d5?q=80&w=1000&auto=format&fit=crop" alt="Head Baker" className="parallax-img absolute inset-0 w-full h-[115%] -top-[10%] object-cover opacity-80 grayscale group-hover:grayscale-0 transition-all duration-1000" />
+            <img src="https://images.unsplash.com/photo-1577219491135-ce391730fb2c?q=80&w=1000&auto=format&fit=crop" alt="Head Baker" className="parallax-img absolute inset-0 w-full h-[115%] -top-[10%] object-cover opacity-80 grayscale group-hover:grayscale-0 transition-all duration-1000" />
           </div>
           <div className="w-full md:w-1/2 md:pl-10 text-center md:text-left">
             <h2 className="font-serif text-3xl md:text-6xl text-[#fcfbf8] mb-6 md:mb-8">The Hands <br className="hidden md:block"/><span className="italic">Behind the Dough</span></h2>
             <p className="text-[#f5e6d3]/60 leading-relaxed font-light mb-8 md:mb-10 text-sm md:text-lg">"Baking at this level is not about recipes. It's about feeling the humidity in the air, the warmth of the flour, and listening to the crackle of the crust as it cools. It is a living, breathing dialogue."</p>
-            <p className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/40">— Julien Laurent, Head Boulanger</p>
+            <p className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase text-[#f5e6d3]/40">— Lucifer, Head Chef</p>
           </div>
         </div>
       </section>
 
-      {/* 5. IMMERSIVE PARALLAX BREAK */}
       <section className="h-[60vh] md:h-[90vh] w-full relative overflow-hidden z-30 flex items-center justify-center">
         <img src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=2000&auto=format&fit=crop" alt="Pouring coffee" className="parallax-img absolute inset-0 w-full h-[140%] -top-[20%] object-cover opacity-30 z-0" />
         <div className="absolute inset-0 bg-[#0a0705]/50 z-10"></div>
@@ -501,7 +500,6 @@ export default function App() {
         </h2>
       </section>
 
-      {/* 6. MARQUEE */}
       <section className="py-12 md:py-20 bg-[#f5e6d3] text-[#0a0705] overflow-hidden flex whitespace-nowrap z-30 relative border-y border-[#0a0705]/10">
         <div className="marquee-track flex gap-8 md:gap-10 items-center font-serif text-4xl md:text-7xl italic pr-10">
           <span>Artisanal Excellence</span> <span className="text-xl md:text-2xl not-italic opacity-30">✦</span>
@@ -513,7 +511,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* 7. HORIZONTAL SCROLL GALLERY */}
       <section id="gallery" ref={galleryWrapperRef} className="h-screen bg-[#0a0705] flex items-center overflow-hidden z-30 relative">
         <div className="absolute top-24 md:top-32 left-6 md:left-16 z-10">
           <p className="text-[9px] md:text-[10px] tracking-[0.4em] uppercase text-[#f5e6d3]/40">[ The Atmosphere ]</p>
@@ -537,18 +534,16 @@ export default function App() {
         </div>
       </section>
 
-      {/* 8. PRESS / QUOTES */}
       <section className="py-24 md:py-48 px-6 md:px-16 bg-[#120d09] relative z-30 flex items-center justify-center text-center">
         <div className="max-w-4xl">
           <svg className="mx-auto mb-8 md:mb-12 text-[#f5e6d3]/20 w-8 h-8 md:w-12 md:h-12" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/></svg>
           <h2 className="font-serif text-2xl md:text-5xl text-[#fcfbf8] leading-relaxed md:leading-tight mb-8 md:mb-12">
-            "Without a doubt, the most <span className="italic text-white">extraordinary lamination</span> we have seen stateside."
+            "Without a doubt, the most <span className="italic text-white">extraordinary cafe</span> we have seen in Chennai."
           </h2>
-          <p className="text-[9px] md:text-[10px] tracking-[0.4em] uppercase text-[#f5e6d3]/40">— The Culinary Times</p>
+          <p className="text-[9px] md:text-[10px] tracking-[0.4em] uppercase text-[#f5e6d3]/40">— The Times Of India</p>
         </div>
       </section>
 
-      {/* 9. MENU (LIGHT THEME BREAK) */}
       <section id="menu" className="py-24 md:py-32 px-6 md:px-16 bg-[#fcfbf8] text-[#0a0705] relative z-30 transition-colors duration-1000">
         <div className="max-w-5xl mx-auto">
           <div className="flex justify-between items-end border-b border-[#0a0705]/10 pb-8 md:pb-10 mb-12 md:mb-16">
@@ -558,11 +553,60 @@ export default function App() {
 
           <div className="flex flex-col">
             {[
-              { name: 'Signature Butter Croissant', price: '$6.00', desc: 'Isigny Ste Mère butter, 72h ferment' },
-              { name: 'Pain au Chocolat', price: '$7.50', desc: 'Valrhona dark chocolate batons' },
-              { name: 'Cardamom Knot', price: '$5.50', desc: 'Freshly ground green cardamom' },
-              { name: 'Vanilla Bean Tart', price: '$12.00', desc: 'Madagascar vanilla, crisp sablé shell' },
-              { name: 'Single Origin Pour Over', price: '$8.00', desc: 'Rotating seasonal selection' }
+              { 
+                name: 'Signature Butter Croissant', 
+                price: '₹350', 
+                desc: 'Isigny Ste Mère butter, 72h ferment, shattering crust.',
+                image: 'https://images.unsplash.com/photo-1549903072-7e6e0d2390eb?q=80&w=1000&auto=format&fit=crop'
+              },
+              { 
+                name: 'Pain au Chocolat', 
+                price: '₹420', 
+                desc: 'Laminated dough encasing twin Valrhona dark chocolate batons.',
+                image: 'https://images.unsplash.com/photo-1608198093002-ad4e005484ec?q=80&w=1000&auto=format&fit=crop'
+              },
+              { 
+                name: 'Pistachio & Rose Twice-Baked', 
+                price: '₹550', 
+                desc: 'Iranian pistachio frangipane, subtle hint of local rose petal preserve.',
+                image: 'https://images.unsplash.com/photo-1623366302587-b2487aeaf303?q=80&w=1000&auto=format&fit=crop'
+              },
+              { 
+                name: 'Cardamom Knot', 
+                price: '₹320', 
+                desc: 'Braided brioche, freshly ground local green cardamom, pearl sugar.',
+                image: 'https://images.unsplash.com/photo-1509365465985-25d11c17e812?q=80&w=1000&auto=format&fit=crop'
+              },
+              { 
+                name: 'Madras Filter Coffee Éclair', 
+                price: '₹480', 
+                desc: 'Choux pastry filled with a rich degree-coffee infused crème diplomate.',
+                image: 'https://images.unsplash.com/photo-1612201142855-7873bc1661b4?q=80&w=1000&auto=format&fit=crop'
+              },
+              { 
+                name: 'Truffle Mushroom Cruffin', 
+                price: '₹520', 
+                desc: 'Savoury cruffin, wild mushroom duxelles, white truffle oil, thyme.',
+                image: 'https://images.unsplash.com/photo-1579954115545-a95591f28bfc?q=80&w=1000&auto=format&fit=crop'
+              },
+              { 
+                name: 'Vanilla Bean Tart', 
+                price: '₹650', 
+                desc: 'Madagascar vanilla bean ganache, crisp butter sablé shell.',
+                image: 'https://images.unsplash.com/photo-1519869325930-281384150729?q=80&w=1000&auto=format&fit=crop'
+              },
+              { 
+                name: 'Single Origin Pour Over', 
+                price: '₹450', 
+                desc: 'Rotating seasonal selection from Kodaikanal and Chikmagalur estates.',
+                image: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=1000&auto=format&fit=crop'
+              },
+              { 
+                name: 'Artisanal Cascara Kombucha', 
+                price: '₹380', 
+                desc: 'House-fermented with coffee cherry husks, sparkling and bright.',
+                image: 'https://images.unsplash.com/photo-1515442261605-65987783cb6a?q=80&w=1000&auto=format&fit=crop'
+              }
             ].map((item, i) => (
               <div key={i} className="hover-target group flex flex-col md:flex-row justify-between md:items-center py-6 md:py-12 border-b border-[#0a0705]/10 hover:border-[#0a0705]/40 transition-colors duration-500 md:cursor-none">
                 <div className="flex flex-col md:w-2/3">
@@ -576,10 +620,53 @@ export default function App() {
         </div>
       </section>
 
-      {/* 10. EDITORIAL FOOTER */}
+      <section id="contact" className="py-24 md:py-40 px-6 md:px-16 bg-[#0a0705] relative z-30 border-t border-[#f5e6d3]/5">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-16 md:gap-24">
+          <div className="w-full md:w-5/12 flex flex-col justify-center">
+            <p className="text-[10px] tracking-[0.4em] uppercase text-[#f5e6d3]/40 mb-6 md:mb-8 border-l border-[#f5e6d3]/20 pl-4">Inquiries</p>
+            <h2 className="font-serif text-4xl md:text-6xl leading-tight text-[#fcfbf8] mb-8 md:mb-10">
+              Let's start a <br/><span className="italic text-[#f5e6d3]/60">conversation.</span>
+            </h2>
+            <p className="text-sm md:text-lg text-[#f5e6d3]/60 font-light leading-relaxed mb-8 md:mb-12">
+              Whether it's a private event, wholesale inquiry, or simply to share your thoughts about our pastries, we are always listening.
+            </p>
+          </div>
+          
+          <div className="w-full md:w-7/12 flex flex-col justify-center">
+            <form onSubmit={handleFormSubmit} className="flex flex-col gap-8 md:gap-12 w-full">
+              <div className="flex flex-col md:flex-row gap-8 md:gap-12 w-full">
+                <div className="flex flex-col w-full relative">
+                  <input type="text" name="name" id="name" required className="peer bg-transparent border-b border-[#f5e6d3]/20 py-3 text-[#fcfbf8] font-light placeholder-transparent focus:outline-none focus:border-[#fcfbf8] transition-colors hover-target md:cursor-none w-full" placeholder="Name" />
+                  <label htmlFor="name" className="absolute left-0 -top-3.5 text-[10px] tracking-[0.2em] uppercase text-[#f5e6d3]/40 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3 peer-focus:-top-3.5 peer-focus:text-[10px] peer-focus:text-[#fcfbf8] md:cursor-none">Your Name</label>
+                </div>
+                <div className="flex flex-col w-full relative">
+                  <input type="email" name="email" id="email" required className="peer bg-transparent border-b border-[#f5e6d3]/20 py-3 text-[#fcfbf8] font-light placeholder-transparent focus:outline-none focus:border-[#fcfbf8] transition-colors hover-target md:cursor-none w-full" placeholder="Email" />
+                  <label htmlFor="email" className="absolute left-0 -top-3.5 text-[10px] tracking-[0.2em] uppercase text-[#f5e6d3]/40 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3 peer-focus:-top-3.5 peer-focus:text-[10px] peer-focus:text-[#fcfbf8] md:cursor-none">Your Email</label>
+                </div>
+              </div>
+              
+              <div className="flex flex-col w-full relative mt-4 md:mt-0">
+                <textarea name="message" id="message" rows="4" required className="peer bg-transparent border-b border-[#f5e6d3]/20 py-3 text-[#fcfbf8] font-light placeholder-transparent focus:outline-none focus:border-[#fcfbf8] transition-colors hover-target md:cursor-none resize-none w-full" placeholder="Message"></textarea>
+                <label htmlFor="message" className="absolute left-0 -top-3.5 text-[10px] tracking-[0.2em] uppercase text-[#f5e6d3]/40 transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3 peer-focus:-top-3.5 peer-focus:text-[10px] peer-focus:text-[#fcfbf8] md:cursor-none">Your Message</label>
+              </div>
+              
+              <button 
+                type="submit" 
+                disabled={formStatus === 'submitting'}
+                className="self-start mt-4 px-10 py-4 border border-[#f5e6d3]/40 rounded-full text-[10px] tracking-[0.3em] uppercase text-[#fcfbf8] hover:bg-[#fcfbf8] hover:text-[#0a0705] transition-all duration-500 ease-out hover-target md:cursor-none disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {formStatus === 'idle' && 'Send Message'}
+                {formStatus === 'submitting' && 'Sending...'}
+                {formStatus === 'success' && 'Sent Successfully ✓'}
+                {formStatus === 'error' && 'Error. Try Again.'}
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
       <footer className="bg-[#050302] text-[#f5e6d3] pt-20 md:pt-24 pb-8 px-6 md:px-12 flex flex-col relative z-30 overflow-hidden">
         
-        {/* Top Grid Info Section */}
         <div className="max-w-[1400px] mx-auto w-full flex flex-col md:flex-row justify-between items-start gap-12 border-b border-[#f5e6d3]/15 pb-12 md:pb-16">
           <div className="w-full md:w-1/3">
             <h3 className="text-xl md:text-3xl font-serif mb-4 md:mb-6 text-[#fcfbf8]">Let's bake something incredible.</h3>
@@ -592,34 +679,84 @@ export default function App() {
             <div className="flex flex-col gap-3 md:gap-4">
               <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#f5e6d3]/40 mb-1 md:mb-2">Socials</span>
               <a href="#" className="text-xs md:text-sm hover-target hover:text-[#fcfbf8] md:hover:-translate-y-1 transition-all md:cursor-none">Instagram</a>
-              <a href="#" className="text-xs md:text-sm hover-target hover:text-[#fcfbf8] md:hover:-translate-y-1 transition-all md:cursor-none">Twitter</a>
-              <a href="#" className="text-xs md:text-sm hover-target hover:text-[#fcfbf8] md:hover:-translate-y-1 transition-all md:cursor-none">Journal</a>
+              <a href="#" className="text-xs md:text-sm hover-target hover:text-[#fcfbf8] md:hover:-translate-y-1 transition-all md:cursor-none">LinkedIn</a>
+              <a href="#" className="text-xs md:text-sm hover-target hover:text-[#fcfbf8] md:hover:-translate-y-1 transition-all md:cursor-none">Whatsapp</a>
             </div>
             <div className="flex flex-col gap-3 md:gap-4">
               <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#f5e6d3]/40 mb-1 md:mb-2">Visit</span>
-              <span className="text-xs md:text-sm">124 Artisan Ave.</span>
-              <span className="text-xs md:text-sm">New York, NY 10012</span>
+              <span className="text-xs md:text-sm">Ashok Nagar, 8th Avenue</span>
+              <span className="text-xs md:text-sm">Chennai - 600083</span>
             </div>
           </div>
         </div>
         
-        {/* Massive Edge-to-Edge Typography Anchor */}
         <div className="mt-16 md:mt-20 mb-8 md:mb-12 w-full flex justify-center items-center pointer-events-none select-none">
           <h1 className="text-[14vw] md:text-[13vw] font-serif leading-[0.8] tracking-tighter text-[#fcfbf8] uppercase opacity-90 text-center">
             Crust <span className="italic font-light text-[12vw] md:text-[11vw]">&</span> Crunch
           </h1>
         </div>
         
-        {/* Bottom Bar */}
         <div className="max-w-[1400px] mx-auto w-full flex flex-col md:flex-row justify-between items-center text-[9px] font-bold uppercase tracking-[0.3em] text-[#f5e6d3]/40 pt-6 md:pt-8 border-t border-[#f5e6d3]/10">
           <span className="mb-4 md:mb-0">© 2026 Crust & Crunch</span>
           <div className="flex gap-6 md:gap-8">
-            <a href="#" className="hover-target hover:text-[#fcfbf8] transition-colors md:cursor-none">Privacy Policy</a>
+            <a 
+              href="#" 
+              onClick={(e) => {
+                e.preventDefault();
+                setIsPrivacyOpen(true);
+              }}
+              className="hover-target hover:text-[#fcfbf8] transition-colors md:cursor-none"
+            >
+              Privacy Policy
+            </a>
             <a href="#top" className="hover-target hover:text-[#fcfbf8] transition-colors md:cursor-none">Back to Top ↑</a>
           </div>
         </div>
         
       </footer>
+      {isPrivacyOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-[#0a0705]/80 backdrop-blur-sm">
+          <div className="bg-[#120d09] border border-[#f5e6d3]/10 max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-sm p-8 md:p-12 relative shadow-2xl">
+            
+            <button 
+              onClick={() => setIsPrivacyOpen(false)}
+              className="absolute top-6 right-6 text-[#f5e6d3]/40 hover:text-[#fcfbf8] transition-colors text-3xl font-light hover-target md:cursor-none"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+            
+            <h3 className="font-serif text-2xl md:text-3xl text-[#fcfbf8] mb-8 italic">Privacy Policy</h3>
+            
+            <div className="space-y-6 text-sm md:text-base text-[#f5e6d3]/60 font-light leading-relaxed">
+              <p>
+                At Crust & Crunch, we respect your privacy and are committed to protecting your personal data. This privacy policy will inform you as to how we look after your personal data when you visit our website.
+              </p>
+              
+              <div>
+                <h4 className="text-[#fcfbf8] text-xs uppercase tracking-[0.2em] mb-2 font-bold">1. Information We Collect</h4>
+                <p>
+                  We may collect, use, store and transfer different kinds of personal data about you including Identity Data, Contact Data, and Usage Data. We do not collect any Special Categories of Personal Data about you.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-[#fcfbf8] text-xs uppercase tracking-[0.2em] mb-2 font-bold">2. How We Use Your Data</h4>
+                <p>
+                  We will only use your personal data when the law allows us to. Most commonly, we will use your personal data to perform the contract we are about to enter into or have entered into with you, or where it is necessary for our legitimate interests.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-[#fcfbf8] text-xs uppercase tracking-[0.2em] mb-2 font-bold">3. Data Security</h4>
+                <p>
+                  We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used or accessed in an unauthorised way, altered or disclosed.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
