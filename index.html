@@ -2,29 +2,80 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- Mobile + SEO Basics -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Crust & Crunch</title>
-    <meta name="description" content="Experience the finest artisanal pastries, 72-hour fermented croissants, and single-origin coffee at Crust & Crunch. Your premium cafe destination in Ashok Nagar, Chennai." />
-    <meta name="keywords" content="Cafe Ashok Nagar, Bakery Chennai, Artisanal Pastries, Croissants Chennai, Single Origin Coffee, Crust and Crunch, Cafe near me, Best cafe in Ashok Nagar" />
+    <title>Crust & Crunch | Best Cafe in Ashok Nagar, Chennai</title>
+
+    <!-- SEO Meta -->
+    <meta name="description" content="Crust & Crunch is a premium artisanal cafe in Ashok Nagar, Chennai. Experience 72-hour fermented croissants, handcrafted pastries, and single-origin coffee." />
+    <meta name="keywords" content="Cafe Ashok Nagar, Best cafe in Chennai, Bakery Chennai, Croissants Chennai, Coffee shop Chennai, Crust and Crunch" />
     <meta name="author" content="Crust & Crunch" />
     <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://www.crustandcrunch.com/" />
+
+    <!-- ✅ FIXED Canonical -->
+    <link rel="canonical" href="https://crust-and-crunch.vercel.app/" />
+
+    <!-- Theme -->
+    <meta name="theme-color" content="#0a0705" />
+
+    <!-- Open Graph (for WhatsApp, LinkedIn, etc.) -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Crust & Crunch | Artisanal Cafe in Ashok Nagar, Chennai" />
-    <meta property="og:description" content="Experience the finest artisanal pastries, 72-hour fermented croissants, and single-origin coffee at Crust & Crunch. Your premium cafe destination in Ashok Nagar, Chennai." />
-    <meta property="og:url" content="https://www.crustandcrunch.com/" />
+    <meta property="og:title" content="Crust & Crunch | Artisanal Cafe in Chennai" />
+    <meta property="og:description" content="Premium pastries, croissants, and single-origin coffee in Ashok Nagar, Chennai." />
+    <meta property="og:url" content="https://crust-and-crunch.vercel.app/" />
     <meta property="og:site_name" content="Crust & Crunch" />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Crust & Crunch | Artisanal Cafe in Ashok Nagar, Chennai" />
-    <meta name="twitter:description" content="Experience the finest artisanal pastries and single-origin coffee at Crust & Crunch in Ashok Nagar, Chennai." />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='6' y='6' width='88' height='88' rx='18' fill='%23000000' stroke='%23d4af37' stroke-width='2'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia, serif' font-size='44' font-weight='600' fill='%23ffffff'%3EC%3Ctspan font-style='italic'%3E%26amp;%3C/tspan%3EC%3C/text%3E%3C/svg%3E" />
+    <meta name="twitter:title" content="Crust & Crunch | Artisanal Cafe in Chennai" />
+    <meta name="twitter:description" content="Premium pastries and coffee experience in Chennai." />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='6' y='6' width='88' height='88' rx='18' fill='%23000000' stroke='%23d4af37' stroke-width='2'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='Georgia, serif' font-size='44' font-weight='600' fill='%23ffffff'%3EC%3Ctspan font-style='italic'%3E%26amp;%3C/tspan%3EC%3C/text%3E%3C/svg%3E" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+    <!-- ✅ Google Verification -->
     <meta name="google-site-verification" content="ulJ7EgWXilfFMFFTByCFT4QnDaxfhUrxBQ9TF3kxhDs" />
+
+    <!-- ✅ Structured Data (VERY IMPORTANT FOR SEO) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "CafeOrCoffeeShop",
+      "name": "Crust & Crunch",
+      "url": "https://crust-and-crunch.vercel.app/",
+      "image": "https://crust-and-crunch.vercel.app/",
+      "description": "Premium artisanal cafe in Ashok Nagar, Chennai serving pastries and coffee.",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "8th Avenue, Ashok Nagar",
+        "addressLocality": "Chennai",
+        "addressRegion": "Tamil Nadu",
+        "postalCode": "600083",
+        "addressCountry": "IN"
+      },
+      "servesCuisine": "Bakery, Coffee",
+      "priceRange": "₹₹",
+      "sameAs": [
+        "https://instagram.com/",
+        "https://linkedin.com/"
+      ]
+    }
+    </script>
+
   </head>
+
   <body>
+    <!-- Root App -->
     <div id="root"></div>
+
+    <!-- React Entry -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
