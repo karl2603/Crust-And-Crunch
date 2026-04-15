@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://crust-and-crunch.vercel.app/sitemap.xml
